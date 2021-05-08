@@ -4,7 +4,7 @@
 
 import re
 import string
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from mimesis.data import CREDIT_CARD_NETWORKS
 from mimesis.enums import CardType, Gender
@@ -14,25 +14,25 @@ from mimesis.providers.person import Person
 from mimesis.random import get_random_item
 from mimesis.shortcuts import luhn_checksum
 
-__all__ = ['Payment']
+__all__ = ["Payment"]
 
 
 class Payment(BaseProvider):
     """Class that provides data related to payments."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize attributes.
 
         :param args: Arguments.
         :param kwargs: Keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.__person = Person('en', seed=self.seed)
+        self.__person = Person("en", seed=self.seed)
 
     class Meta:
         """Class for metadata."""
 
-        name = 'payment'
+        name = "payment"
 
     def cid(self) -> int:
         """Generate a random CID.
@@ -62,10 +62,9 @@ class Payment(BaseProvider):
         :Example:
             3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX
         """
-        type_ = self.random.choice(['1', '3'])
+        type_ = self.random.choice(["1", "3"])
         letters = string.ascii_letters + string.digits
-        return type_ + ''.join(
-            self.random.choice(letters) for _ in range(33))
+        return type_ + "".join(self.random.choice(letters) for _ in range(33))
 
     def ethereum_address(self) -> str:
         """Generate a random Ethereum address.
@@ -79,8 +78,8 @@ class Payment(BaseProvider):
             0xe8ece9e6ff7dba52d4c07d37418036a89af9698d
         """
         bits = self.random.getrandbits(160)
-        address = bits.to_bytes(20, byteorder='big')
-        return '0x' + address.hex()
+        address = bits.to_bytes(20, byteorder="big")
+        return "0x" + address.hex()
 
     def credit_card_network(self) -> str:
         """Generate a random credit card network.
@@ -103,7 +102,7 @@ class Payment(BaseProvider):
             4455 5299 1152 2450
         """
         length = 16
-        regex = re.compile(r'(\d{4})(\d{4})(\d{4})(\d{4})')
+        regex = re.compile(r"(\d{4})(\d{4})(\d{4})(\d{4})")
 
         if card_type is None:
             card_type = get_random_item(CardType, rnd=self.random)
@@ -111,14 +110,16 @@ class Payment(BaseProvider):
         if card_type == CardType.VISA:
             number = self.random.randint(4000, 4999)
         elif card_type == CardType.MASTER_CARD:
-            number = self.random.choice([
-                self.random.randint(2221, 2720),
-                self.random.randint(5100, 5599),
-            ])
+            number = self.random.choice(
+                [
+                    self.random.randint(2221, 2720),
+                    self.random.randint(5100, 5599),
+                ]
+            )
         elif card_type == CardType.AMERICAN_EXPRESS:
             number = self.random.choice([34, 37])
             length = 15
-            regex = re.compile(r'(\d{4})(\d{6})(\d{5})')
+            regex = re.compile(r"(\d{4})(\d{6})(\d{5})")
         else:
             raise NonEnumerableError(CardType)
 
@@ -129,11 +130,10 @@ class Payment(BaseProvider):
         groups = regex.search(  # type: ignore
             str_num + luhn_checksum(str_num),
         ).groups()
-        card = ' '.join(groups)
+        card = " ".join(groups)
         return card
 
-    def credit_card_expiration_date(self, minimum: int = 16,
-                                    maximum: int = 25) -> str:
+    def credit_card_expiration_date(self, minimum: int = 16, maximum: int = 25) -> str:
         """Generate a random expiration date for credit card.
 
         :param minimum: Date of issue.
@@ -145,7 +145,7 @@ class Payment(BaseProvider):
         """
         month = self.random.randint(1, 12)
         year = self.random.randint(minimum, maximum)
-        return '{0:02d}/{1}'.format(month, year)
+        return "{0:02d}/{1}".format(month, year)
 
     def cvv(self) -> int:
         """Generate a random CVV.
@@ -157,7 +157,10 @@ class Payment(BaseProvider):
         """
         return self.random.randint(100, 999)
 
-    def credit_card_owner(self, gender: Optional[Gender] = None) -> dict:
+    def credit_card_owner(
+        self,
+        gender: Optional[Gender] = None,
+    ) -> Dict[str, str]:
         """Generate credit card owner.
 
         :param gender: Gender of credit card owner.
@@ -165,8 +168,8 @@ class Payment(BaseProvider):
         :return:
         """
         owner = {
-            'credit_card': self.credit_card_number(),
-            'expiration_date': self.credit_card_expiration_date(),
-            'owner': self.__person.full_name(gender=gender).upper(),
+            "credit_card": self.credit_card_number(),
+            "expiration_date": self.credit_card_expiration_date(),
+            "owner": self.__person.full_name(gender=gender).upper(),
         }
         return owner

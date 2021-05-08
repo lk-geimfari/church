@@ -2,26 +2,28 @@
 
 """Base data provider."""
 
-import collections.abc
 import contextlib
 import functools
 import json
 from pathlib import Path
-from typing import Any, Generator, Mapping
+from typing import Any, Generator, Optional
 
 from mimesis import locales
-from mimesis.exceptions import NonEnumerableError, UnsupportedLocale
+from mimesis.exceptions import LocaleError, NonEnumerableError
 from mimesis.random import Random, get_random_item, random
 from mimesis.typing import JSON, Seed
 
-__all__ = ['BaseDataProvider', 'BaseProvider']
+__all__ = ["BaseDataProvider", "BaseProvider"]
 
 
-class BaseProvider(object):
+class BaseProvider:
     """This is a base class for all providers."""
 
-    def __init__(self, seed: Seed = None) -> None:
+    def __init__(self, *, seed: Optional[Seed] = None) -> None:
         """Initialize attributes.
+
+        Keep in mind, that locale-independent data providers will work
+        only with keyword-only arguments since version 5.0.0.
 
         :param seed: Seed for random.
             When set to `None` the current system time is used.
@@ -32,7 +34,7 @@ class BaseProvider(object):
         if seed is not None:
             self.reseed(seed)
 
-    def reseed(self, seed: Seed = None) -> None:
+    def reseed(self, seed: Optional[Seed] = None) -> None:
         """Reseed the internal random generator.
 
         In case we use the default seed, we need to create a per instance
@@ -48,7 +50,7 @@ class BaseProvider(object):
         self.seed = seed
         self.random.seed(self.seed)
 
-    def _validate_enum(self, item: Any, enum: Any) -> Any:
+    def validate_enum(self, item: Any, enum: Any) -> Any:
         """Validate enum parameter of method in subclasses of BaseProvider.
 
         :param item: Item of enum object.
@@ -73,8 +75,9 @@ class BaseProvider(object):
 class BaseDataProvider(BaseProvider):
     """This is a base class for all data providers."""
 
-    def __init__(self, locale: str = locales.DEFAULT_LOCALE,
-                 seed: Seed = None) -> None:
+    def __init__(
+        self, locale: str = locales.DEFAULT_LOCALE, seed: Optional[Seed] = None
+    ) -> None:
         """Initialize attributes for data providers.
 
         :param locale: Current locale.
@@ -82,9 +85,9 @@ class BaseDataProvider(BaseProvider):
         """
         super().__init__(seed=seed)
         self._data: JSON = {}
-        self._datafile = ''
+        self._datafile = ""
         self._setup_locale(locale)
-        self._data_dir = Path(__file__).parent.parent.joinpath('data')
+        self._data_dir = Path(__file__).parent.parent.joinpath("data")
 
     def _setup_locale(self, locale: str = locales.DEFAULT_LOCALE) -> None:
         """Set up locale after pre-check.
@@ -98,11 +101,11 @@ class BaseDataProvider(BaseProvider):
 
         locale = locale.lower()
         if locale not in locales.SUPPORTED_LOCALES:
-            raise UnsupportedLocale(locale)
+            raise LocaleError(locale)
 
         self.locale = locale
 
-    def _update_dict(self, initial: JSON, other: Mapping) -> JSON:
+    def _update_dict(self, initial: JSON, other: JSON) -> JSON:
         """Recursively update a dictionary.
 
         :param initial: Dict to update.
@@ -110,7 +113,7 @@ class BaseDataProvider(BaseProvider):
         :return: Updated dict.
         """
         for key, value in other.items():
-            if isinstance(value, collections.abc.Mapping):
+            if isinstance(value, dict):
                 r = self._update_dict(initial.get(key, {}), value)
                 initial[key] = r
             else:
@@ -118,7 +121,7 @@ class BaseDataProvider(BaseProvider):
         return initial
 
     @functools.lru_cache(maxsize=None)
-    def _pull(self, datafile: str = '') -> None:
+    def _pull(self, datafile: str = "") -> None:
         """Pull the content from the JSON and memorize one.
 
         Opens JSON file ``file`` in the folder ``data/locale``
@@ -134,14 +137,14 @@ class BaseDataProvider(BaseProvider):
         if not datafile:
             datafile = self._datafile
 
-        def get_data(locale_name: str) -> JSON:
+        def get_data(locale_name: str) -> Any:
             """Pull JSON data from file.
 
             :param locale_name: Locale name.
             :return: Content of JSON file as dict.
             """
             file_path = Path(data_dir).joinpath(locale_name, datafile)
-            with open(file_path, 'r', encoding='utf8') as f:
+            with open(file_path, "r", encoding="utf8") as f:
                 return json.load(f)
 
         separator = locales.LOCALE_SEPARATOR
@@ -175,8 +178,10 @@ class BaseDataProvider(BaseProvider):
         self._pull()
 
     @contextlib.contextmanager
-    def override_locale(self, locale: str = locales.EN,
-                        ) -> Generator['BaseDataProvider', None, None]:
+    def override_locale(
+        self,
+        locale: str = locales.EN,
+    ) -> Generator["BaseDataProvider", None, None]:
         """Context manager which allows overriding current locale.
 
         Temporarily overrides current locale for
@@ -193,10 +198,11 @@ class BaseDataProvider(BaseProvider):
             finally:
                 self._override_locale(origin_locale)
         except AttributeError:
-            raise ValueError('«{}» has not locale dependent'.format(
-                self.__class__.__name__))
+            raise ValueError(
+                "«{}» has not locale dependent".format(self.__class__.__name__)
+            )
 
     def __str__(self) -> str:
         """Human-readable representation of locale."""
-        locale = getattr(self, 'locale', locales.DEFAULT_LOCALE)
-        return '{} <{}>'.format(self.__class__.__name__, locale)
+        locale = getattr(self, "locale", locales.DEFAULT_LOCALE)
+        return "{} <{}>".format(self.__class__.__name__, locale)

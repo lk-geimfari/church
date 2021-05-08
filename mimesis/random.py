@@ -13,12 +13,11 @@ get a random item of the enum object.
 
 import os
 import random as random_module
-import secrets
 import string
 import uuid
 from typing import Any, List, Optional
 
-__all__ = ['Random', 'get_random_item', 'random']
+__all__ = ["Random", "get_random_item", "random"]
 
 
 class Random(random_module.Random):
@@ -29,8 +28,7 @@ class Random(random_module.Random):
 
     """
 
-    def randints(self, amount: int = 3,
-                 a: int = 1, b: int = 100) -> List[int]:
+    def randints(self, amount: int = 3, a: int = 1, b: int = 100) -> List[int]:
         """Generate list of random integers.
 
         :param amount: Amount of elements.
@@ -40,10 +38,9 @@ class Random(random_module.Random):
         :raises ValueError: if amount less or equal to zero.
         """
         if amount <= 0:
-            raise ValueError('Amount out of range.')
+            raise ValueError("Amount out of range.")
 
-        return [int(self.random() * (b - a)) + a
-                for _ in range(amount)]
+        return [int(self.random() * (b - a)) + a for _ in range(amount)]
 
     @staticmethod
     def urandom(size: int = 8) -> bytes:
@@ -61,10 +58,9 @@ class Random(random_module.Random):
         :param length: Max value.
         :return: Single string.
         """
-        return ''.join(self.choice(str_seq) for _ in range(length))
+        return "".join(self.choice(str_seq) for _ in range(length))
 
-    def custom_code(self, mask: str = '@###',
-                    char: str = '@', digit: str = '#') -> str:
+    def custom_code(self, mask: str = "@###", char: str = "@", digit: str = "#") -> str:
         """Generate custom code using ascii uppercase and random integers.
 
         :param mask: Mask of code.
@@ -76,8 +72,9 @@ class Random(random_module.Random):
         digit_code = ord(digit)
 
         if char_code == digit_code:
-            raise ValueError('You cannot use the same '
-                             'placeholder for digits and chars!')
+            raise ValueError(
+                "You cannot use the same placeholder for digits and chars!"
+            )
 
         def random_int(a: int, b: int) -> int:
             b = b - a
@@ -105,8 +102,7 @@ class Random(random_module.Random):
         """
         return round(a + (b - a) * self.random(), precision)
 
-    def randstr(self, unique: bool = False,
-                length: Optional[int] = None) -> str:
+    def randstr(self, unique: bool = False, length: Optional[int] = None) -> str:
         """Generate random string value.
 
         This method can be especially useful when you need to generate
@@ -126,9 +122,7 @@ class Random(random_module.Random):
             length = self.randint(16, 128)
 
         _string = string.ascii_letters + string.digits
-        _string = ''.join(
-            secrets.choice(_string) for _ in range(length)
-        )
+        _string = "".join(self.choice(_string) for _ in range(length))
         return _string
 
 
